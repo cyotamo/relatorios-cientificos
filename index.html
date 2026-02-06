@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SIGAC — Sistema Integrado de Gestão de Actividades Científicas</title>
+  <meta name="description" content="Protótipo demonstrativo para registo, monitoria e relatórios de actividades científicas por faculdades." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="container topbar__inner">
+      <div class="brand">
+        <div class="brand__logo">SIGAC</div>
+        <div class="brand__meta">
+          <div class="brand__title">Sistema Integrado de Gestão de Actividades Científicas</div>
+          <div class="brand__subtitle">Registo • Monitoria • Relatórios • Evidências</div>
+        </div>
+      </div>
+
+      <div class="topbar__actions">
+        <button class="btn btn--ghost" id="btnExport">Exportar Dados</button>
+        <button class="btn btn--ghost" id="btnReset">Repor Demo</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container layout">
+    <!-- Coluna esquerda: Login/Contexto -->
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">Acesso</h2>
+        <p class="card__subtitle">Escolha um perfil para simular o uso do sistema.</p>
+      </div>
+
+      <div class="card__content">
+        <div class="grid">
+          <div class="field">
+            <label class="label" for="perfil">Perfil</label>
+            <select id="perfil" class="input">
+              <option value="DIRECCAO">Direcção Científica (Monitoria)</option>
+              <option value="FACULDADE">Faculdade (Registo de actividades)</option>
+            </select>
+          </div>
+
+          <div class="field" id="faculdadeField" style="display:none;">
+            <label class="label" for="faculdade">Faculdade</label>
+            <select id="faculdade" class="input"></select>
+          </div>
+
+          <div class="field">
+            <label class="label" for="ano">Ano lectivo</label>
+            <input id="ano" class="input" type="number" min="2000" max="2100" value="2026" />
+          </div>
+        </div>
+
+        <div class="row">
+          <button class="btn btn--primary" id="btnEntrar">Entrar</button>
+          <span class="hint" id="statusSessao">Sessão: não iniciada</span>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="callout">
+          <div class="callout__title">Objectivo do protótipo</div>
+          <div class="callout__text">
+            Demonstrar um fluxo “fim-a-fim”:
+            <ul>
+              <li>As faculdades registam actividades ao longo do ano (com evidências/links).</li>
+              <li>A Direcção Científica acompanha progresso, pendências e validações.</li>
+              <li>O sistema gera relatórios por período e anuais com indicadores.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coluna direita: Área dinâmica -->
+    <section class="card card--full">
+      <div class="card__header">
+        <h2 class="card__title" id="areaTitulo">Área do Sistema</h2>
+        <p class="card__subtitle" id="areaSubtitulo">Inicie sessão para ver os módulos disponíveis.</p>
+      </div>
+
+      <div class="card__content" id="app">
+        <!-- Conteúdo injectado por JS -->
+        <div class="empty">
+          <div class="empty__icon">📘</div>
+          <div class="empty__title">Pronto para a demonstração</div>
+          <div class="empty__text">
+            Seleccione o perfil (Faculdade ou Direcção Científica) e clique em <b>Entrar</b>.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>Protótipo SIGAC — versão demonstrativa (HTML + JS)</span>
+      <span class="muted">Sem backend • Dados simulados em localStorage</span>
+    </div>
+  </footer>
+
+  <script src="js/db.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
