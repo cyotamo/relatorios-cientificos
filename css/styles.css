@@ -22,9 +22,11 @@ html,body{ height:100%; }
 body{
   margin:0;
   font-family: var(--font);
-  background: radial-gradient(1200px 600px at 20% 10%, rgba(79,140,255,.22), transparent 60%),
-              radial-gradient(900px 500px at 90% 20%, rgba(43,213,118,.18), transparent 55%),
-              #111827;
+  background:
+    radial-gradient(1200px 600px at 20% 10%, rgba(79,140,255,.30), transparent 60%),
+    radial-gradient(900px 500px at 90% 20%, rgba(43,213,118,.24), transparent 55%),
+    radial-gradient(900px 550px at 60% 90%, rgba(255,204,102,.14), transparent 60%),
+    #121c2f;
   color: var(--text);
 }
 
@@ -96,6 +98,24 @@ body{
   outline:none;
 }
 .input:focus{ border-color: rgba(79,140,255,.55); box-shadow: 0 0 0 4px rgba(79,140,255,.12); }
+
+/* Melhor contraste em selects e opções (evita texto branco em fundo branco) */
+select.input{
+  color: var(--text);
+  background: rgba(0,0,0,.18);
+}
+
+/* Para navegadores que aplicam menu nativo branco */
+select.input option{
+  color: #111;
+  background: #fff;
+}
+
+/* Melhora o foco (quando clicas/abres) */
+select.input:focus{
+  border-color: rgba(79,140,255,.65);
+  box-shadow: 0 0 0 4px rgba(79,140,255,.16);
+}
 
 .row{ display:flex; align-items:center; gap:12px; margin-top: 12px; }
 .hint{ color: var(--muted); font-size:.9rem; }
