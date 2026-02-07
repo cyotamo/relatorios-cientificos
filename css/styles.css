@@ -1,10 +1,10 @@
 :root{
-  --bg: #0b1220;
-  --card: rgba(255,255,255,.06);
-  --stroke: rgba(255,255,255,.12);
+  --bg: #111827;
+  --card: rgba(255,255,255,.09);
+  --stroke: rgba(255,255,255,.16);
   --text: rgba(255,255,255,.92);
-  --muted: rgba(255,255,255,.68);
-  --muted2: rgba(255,255,255,.52);
+  --muted: rgba(255,255,255,.75);
+  --muted2: rgba(255,255,255,.6);
   --primary: #4f8cff;
   --primary2: #2f6bff;
   --good: #2bd576;
@@ -22,9 +22,9 @@ html,body{ height:100%; }
 body{
   margin:0;
   font-family: var(--font);
-  background: radial-gradient(1200px 600px at 20% 10%, rgba(79,140,255,.18), transparent 60%),
-              radial-gradient(900px 500px at 90% 20%, rgba(43,213,118,.12), transparent 55%),
-              var(--bg);
+  background: radial-gradient(1200px 600px at 20% 10%, rgba(79,140,255,.22), transparent 60%),
+              radial-gradient(900px 500px at 90% 20%, rgba(43,213,118,.18), transparent 55%),
+              #111827;
   color: var(--text);
 }
 
