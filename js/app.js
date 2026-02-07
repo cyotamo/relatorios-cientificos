@@ -2,7 +2,14 @@
 
 const state = {
   sessao: null, // { perfil, ano, faculdadeId? }
-  tab: "PLANIFICACAO" // PLANIFICACAO | PLANIFICADAS | EXECUTADAS | CANCELADAS | NAO_EXECUTADAS | RELATORIO
+  tab: "PLANIFICACAO", // PLANIFICACAO | PLANIFICADAS | EXECUTADAS | CANCELADAS | NAO_EXECUTADAS | RELATORIO
+  filtrosDireccao: {
+    ano: "",
+    faculdadeId: "TODAS",
+    categoria: "TODAS",
+    periodo: "TODOS",
+    pesquisa: ""
+  }
 };
 
 const $ = (id) => document.getElementById(id);
@@ -48,9 +55,22 @@ function onEntrar(){
     const faculdadeId = $("faculdade").value;
     state.sessao = { perfil, ano, faculdadeId };
     $("statusSessao").textContent = `Sessão: Faculdade (${faculdadeNome(faculdadeId)}) — ${ano}`;
+    state.tab = "PLANIFICACAO";
   }
 
-  state.tab = "PLANIFICACAO";
+  if (perfil === "DIRECCAO"){
+    state.sessao = { perfil, ano };
+    state.tab = "PLANIFICADAS";
+    state.filtrosDireccao = {
+      ano: String(ano),
+      faculdadeId: "TODAS",
+      categoria: "TODAS",
+      periodo: "TODOS",
+      pesquisa: ""
+    };
+    $("statusSessao").textContent = `Sessão: Direcção Científica — ${ano}`;
+  }
+
   render();
 }
 
@@ -66,6 +86,19 @@ function estadoLabel(estado){
     case "NaoExecutada": return "Não executada";
     default: return "Planificada";
   }
+}
+
+function getCategorias(){
+  return [
+    "Pesquisa",
+    "Extensão",
+    "Inovação",
+    "Evento Científico",
+    "Publicação Científica",
+    "Pós-graduação",
+    "Cooperação",
+    "Formação"
+  ];
 }
 
 function toast(msg){
@@ -103,7 +136,9 @@ function render(){
 
   const tabs = el(`
     <div class="tabs">
-      <div class="tab ${state.tab==="PLANIFICACAO"?"tab--active":""}" data-tab="PLANIFICACAO">Planificação</div>
+      ${state.sessao.perfil === "FACULDADE" ? `
+        <div class="tab ${state.tab==="PLANIFICACAO"?"tab--active":""}" data-tab="PLANIFICACAO">Planificação</div>
+      ` : ""}
       <div class="tab ${state.tab==="PLANIFICADAS"?"tab--active":""}" data-tab="PLANIFICADAS">Planificadas</div>
       <div class="tab ${state.tab==="EXECUTADAS"?"tab--active":""}" data-tab="EXECUTADAS">Executadas</div>
       <div class="tab ${state.tab==="CANCELADAS"?"tab--active":""}" data-tab="CANCELADAS">Canceladas</div>
@@ -117,8 +152,17 @@ function render(){
   }));
   root.appendChild(tabs);
 
-  setHeader(tabTitle(state.tab), tabSubtitle(state.tab));
-  renderFaculdade(root);
+  if (state.sessao.perfil === "DIRECCAO" && state.tab === "PLANIFICACAO"){
+    state.tab = "PLANIFICADAS";
+  }
+
+  setHeader(tabTitle(state.tab), tabSubtitle(state.tab, state.sessao.perfil));
+
+  if (state.sessao.perfil === "DIRECCAO"){
+    renderDireccao(root);
+  }else{
+    renderFaculdade(root);
+  }
 }
 
 function tabTitle(tab){
@@ -133,20 +177,30 @@ function tabTitle(tab){
   }
 }
 
-function tabSubtitle(tab){
+function tabSubtitle(tab, perfil){
   switch (tab){
     case "PLANIFICACAO":
       return "Registo de actividades anuais e calendarização.";
     case "PLANIFICADAS":
-      return "Gestão do plano: definir data de execução, cancelar ou reprogramar.";
+      return perfil === "DIRECCAO"
+        ? "Monitoria institucional das actividades planificadas por faculdade."
+        : "Gestão do plano: definir data de execução, cancelar ou reprogramar.";
     case "EXECUTADAS":
-      return "Registo de evidências e histórico de execução.";
+      return perfil === "DIRECCAO"
+        ? "Consulta consolidada das actividades executadas."
+        : "Registo de evidências e histórico de execução.";
     case "RELATORIO":
-      return "Relatórios periódicos e anual por estado e por categoria.";
+      return perfil === "DIRECCAO"
+        ? "Relatórios institucionais consolidados por período e estado."
+        : "Relatórios periódicos e anual por estado e por categoria.";
     case "CANCELADAS":
-      return "Histórico de actividades canceladas e opção de reabrir.";
+      return perfil === "DIRECCAO"
+        ? "Consulta das actividades canceladas (todas as faculdades)."
+        : "Histórico de actividades canceladas e opção de reabrir.";
     case "NAO_EXECUTADAS":
-      return "Actividades não realizadas e opção de replanificar.";
+      return perfil === "DIRECCAO"
+        ? "Monitoria de actividades não executadas (todas as faculdades)."
+        : "Actividades não realizadas e opção de replanificar.";
     default:
       return "Registo de actividades anuais e calendarização.";
   }
@@ -158,17 +212,12 @@ function renderFaculdade(root){
   const k = calcKPIs(actividades);
 
   root.appendChild(el(`
-    <div class="kpis">
+    <div class="kpis kpis--five">
       <div class="kpi"><div class="kpi__label">Total</div><div class="kpi__value">${k.total}</div></div>
       <div class="kpi"><div class="kpi__label">Planificadas</div><div class="kpi__value">${k.planificadas}</div></div>
       <div class="kpi"><div class="kpi__label">Executadas</div><div class="kpi__value">${k.executadas}</div></div>
       <div class="kpi"><div class="kpi__label">Não executadas</div><div class="kpi__value">${k.naoExecutadas}</div></div>
-    </div>
-  `));
-
-  root.appendChild(el(`
-    <div class="row" style="margin-top:-4px;">
-      <span class="badge badge--bad">Canceladas: ${k.canceladas}</span>
+      <div class="kpi"><div class="kpi__label">Canceladas</div><div class="kpi__value">${k.canceladas}</div></div>
     </div>
   `));
 
@@ -197,8 +246,224 @@ function renderFaculdade(root){
   }
 
   if (state.tab === "RELATORIO"){
-    root.appendChild(renderRelatorios({ ano, filtroFaculdadeId: faculdadeId }));
+    root.appendChild(renderRelatorios({ ano, filtroFaculdadeId: faculdadeId, modoDireccao: false }));
   }
+}
+
+function renderDireccao(root){
+  const anoBase = Number(state.filtrosDireccao.ano || state.sessao.ano);
+  const actividadesAno = DB.listActividades({ ano: anoBase });
+  const k = calcKPIs(actividadesAno);
+  const totalParaExec = k.planificadas + k.executadas + k.naoExecutadas;
+  const percentExecucao = totalParaExec ? ((k.executadas / totalParaExec) * 100).toFixed(1) : "0.0";
+
+  root.appendChild(el(`
+    <div class="monitoria">
+      <div class="monitoria__header">
+        <div>
+          <div class="monitoria__title">Monitoria Institucional</div>
+          <div class="monitoria__subtitle">Indicadores consolidados por ano lectivo.</div>
+        </div>
+        <div class="field monitoria__year">
+          <label class="label">Ano</label>
+          <input class="input" id="monitoriaAno" type="number" min="2000" max="2100" value="${anoBase}" />
+        </div>
+      </div>
+      <div class="kpis kpis--monitoria">
+        <div class="kpi"><div class="kpi__label">Total</div><div class="kpi__value">${k.total}</div></div>
+        <div class="kpi"><div class="kpi__label">Executadas</div><div class="kpi__value">${k.executadas}</div></div>
+        <div class="kpi"><div class="kpi__label">Não executadas</div><div class="kpi__value">${k.naoExecutadas}</div></div>
+        <div class="kpi"><div class="kpi__label">Canceladas</div><div class="kpi__value">${k.canceladas}</div></div>
+        <div class="kpi"><div class="kpi__label">Taxa de execução</div><div class="kpi__value">${percentExecucao}%</div></div>
+      </div>
+    </div>
+  `));
+
+  const resumo = renderResumoFaculdades(actividadesAno);
+  root.appendChild(resumo);
+
+  root.querySelector("#monitoriaAno").addEventListener("change", () => {
+    state.filtrosDireccao.ano = root.querySelector("#monitoriaAno").value;
+    render();
+  });
+
+  if (state.tab === "RELATORIO"){
+    root.appendChild(renderRelatorios({ ano: anoBase, modoDireccao: true }));
+    return;
+  }
+
+  const filtros = renderFiltrosDireccao({ ano: anoBase });
+  root.appendChild(filtros);
+  root.appendChild(renderTabelaDireccao());
+
+  filtros.querySelectorAll("input, select").forEach(input => {
+    input.addEventListener("change", () => {
+      state.filtrosDireccao = {
+        ano: filtros.querySelector("#filtroAno").value,
+        faculdadeId: filtros.querySelector("#filtroFaculdade").value,
+        categoria: filtros.querySelector("#filtroCategoria").value,
+        periodo: filtros.querySelector("#filtroPeriodo").value,
+        pesquisa: filtros.querySelector("#filtroPesquisa").value.trim()
+      };
+      render();
+    });
+  });
+}
+
+function renderResumoFaculdades(actividades){
+  const facs = DB.listFaculdades();
+  const map = groupByFaculdade(actividades);
+  const rows = facs.map(f => {
+    const acts = map.get(f.id) || [];
+    const k = calcKPIs(acts);
+    const totalParaExec = k.planificadas + k.executadas + k.naoExecutadas;
+    const taxa = totalParaExec ? ((k.executadas / totalParaExec) * 100).toFixed(1) : "0.0";
+    return `
+      <tr>
+        <td><b>${f.nome}</b></td>
+        <td>${k.total}</td>
+        <td>${k.executadas}</td>
+        <td>${k.naoExecutadas}</td>
+        <td>${k.canceladas}</td>
+        <td>${taxa}%</td>
+      </tr>
+    `;
+  }).join("");
+
+  return el(`
+    <div class="section">
+      <div class="section__title">Resumo por faculdade</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Faculdade</th>
+            <th>Total</th>
+            <th>Executadas</th>
+            <th>Não executadas</th>
+            <th>Canceladas</th>
+            <th>Taxa de execução</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || `<tr><td colspan="6">Sem registos no período seleccionado.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `);
+}
+
+function renderFiltrosDireccao({ ano }){
+  const facs = DB.listFaculdades();
+  const categorias = getCategorias();
+  const f = state.filtrosDireccao;
+
+  return el(`
+    <div class="section section--filters">
+      <div class="section__title">Tabela detalhada (actividades)</div>
+      <div class="grid" style="grid-template-columns: repeat(5, 1fr); gap:12px; margin-top:12px;">
+        <div class="field">
+          <label class="label">Ano</label>
+          <input class="input" id="filtroAno" type="number" min="2000" max="2100" value="${ano}" />
+        </div>
+        <div class="field">
+          <label class="label">Faculdade</label>
+          <select class="input" id="filtroFaculdade">
+            <option value="TODAS">Todas</option>
+            ${facs.map(fac => `<option value="${fac.id}" ${fac.id === f.faculdadeId ? "selected" : ""}>${fac.nome}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Categoria</label>
+          <select class="input" id="filtroCategoria">
+            <option value="TODAS">Todas</option>
+            ${categorias.map(cat => `<option ${cat === f.categoria ? "selected" : ""}>${cat}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Período</label>
+          <select class="input" id="filtroPeriodo">
+            <option value="TODOS">Todos</option>
+            <option value="T1" ${f.periodo === "T1" ? "selected" : ""}>T1</option>
+            <option value="T2" ${f.periodo === "T2" ? "selected" : ""}>T2</option>
+            <option value="T3" ${f.periodo === "T3" ? "selected" : ""}>T3</option>
+            <option value="T4" ${f.periodo === "T4" ? "selected" : ""}>T4</option>
+            <option value="ANUAL" ${f.periodo === "ANUAL" ? "selected" : ""}>ANUAL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Pesquisar título</label>
+          <input class="input" id="filtroPesquisa" placeholder="Ex.: conferência, jornada, artigo..." value="${f.pesquisa}" />
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function renderTabelaDireccao(){
+  const filtros = state.filtrosDireccao;
+  const ano = Number(filtros.ano || state.sessao.ano);
+  let list = DB.listActividades({ ano });
+
+  if (filtros.faculdadeId !== "TODAS"){
+    list = list.filter(a => a.faculdadeId === filtros.faculdadeId);
+  }
+  if (filtros.categoria !== "TODAS"){
+    list = list.filter(a => a.categoria === filtros.categoria);
+  }
+  if (filtros.periodo !== "TODOS"){
+    list = list.filter(a => a.periodo === filtros.periodo);
+  }
+  if (filtros.pesquisa){
+    const q = filtros.pesquisa.toLowerCase();
+    list = list.filter(a => a.titulo.toLowerCase().includes(q));
+  }
+
+  if (state.tab === "PLANIFICADAS"){
+    list = list.filter(a => a.estadoExecucao === "Planificada");
+  }
+  if (state.tab === "EXECUTADAS"){
+    list = list.filter(a => a.estadoExecucao === "Executada");
+  }
+  if (state.tab === "CANCELADAS"){
+    list = list.filter(a => a.estadoExecucao === "Cancelada");
+  }
+  if (state.tab === "NAO_EXECUTADAS"){
+    list = list.filter(a => a.estadoExecucao === "NaoExecutada");
+  }
+
+  if (!list.length){
+    return renderEmpty();
+  }
+
+  const rows = list.map(a => `
+    <tr>
+      <td><b>${faculdadeNome(a.faculdadeId)}</b></td>
+      <td>
+        <b>${a.titulo}</b><br/>
+        <span class="muted">${a.categoria} • ${a.periodo}</span>
+      </td>
+      <td>${fmtDate(a.dataExecucao)}</td>
+      <td>${(a.evidencias || []).length ? (a.evidencias || []).map(ev => `<a href="${ev}" target="_blank" rel="noopener">${ev}</a>`).join("<br/>") : "—"}</td>
+      <td>${badgeEstadoExecucao(a.estadoExecucao)}</td>
+    </tr>
+  `).join("");
+
+  const table = el(`
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Faculdade</th>
+          <th>Actividade</th>
+          <th>Data de execução</th>
+          <th>Evidências</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `);
+
+  return table;
 }
 
 function renderFormNovaActividade({ ano, faculdadeId }){
@@ -214,14 +479,7 @@ function renderFormNovaActividade({ ano, faculdadeId }){
           <div class="field">
             <label class="label">Categoria</label>
             <select class="input" id="cat">
-              <option>Pesquisa</option>
-              <option>Extensão</option>
-              <option>Inovação</option>
-              <option>Evento Científico</option>
-              <option>Publicação Científica</option>
-              <option>Pós-graduação</option>
-              <option>Cooperação</option>
-              <option>Formação</option>
+              ${getCategorias().map(cat => `<option>${cat}</option>`).join("")}
             </select>
           </div>
           <div class="field">
@@ -539,19 +797,30 @@ function renderEmpty(){
   `);
 }
 
-function renderRelatorios({ ano, filtroFaculdadeId } = {}){
+function renderRelatorios({ ano, filtroFaculdadeId, modoDireccao } = {}){
+  const facs = DB.listFaculdades();
+  const categorias = getCategorias();
   const box = el(`
     <div class="callout" style="margin-bottom:12px;">
       <div class="callout__title">Relatórios</div>
       <div class="callout__text">
-        Gere relatórios por período (T1–T4) e anual, com recorte por estado de execução.
+        Gere relatórios por período (T1–T4) e anual, com recorte por estado e categoria.
       </div>
 
-      <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap:12px; margin-top:12px;">
+      <div class="grid" style="grid-template-columns: repeat(${modoDireccao ? 6 : 5}, 1fr); gap:12px; margin-top:12px;">
         <div class="field">
           <label class="label">Ano</label>
           <input class="input" id="relAno" type="number" min="2000" max="2100" value="${ano}" />
         </div>
+        ${modoDireccao ? `
+          <div class="field">
+            <label class="label">Faculdade</label>
+            <select class="input" id="relFaculdade">
+              <option value="TODAS">Todas</option>
+              ${facs.map(f => `<option value="${f.id}">${f.nome}</option>`).join("")}
+            </select>
+          </div>
+        ` : ""}
         <div class="field">
           <label class="label">Período</label>
           <select class="input" id="relPeriodo">
@@ -560,6 +829,13 @@ function renderRelatorios({ ano, filtroFaculdadeId } = {}){
             <option value="T3">T3</option>
             <option value="T4">T4</option>
             <option value="ANUAL" selected>ANUAL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Categoria</label>
+          <select class="input" id="relCategoria">
+            <option value="TODAS" selected>Todas</option>
+            ${categorias.map(cat => `<option>${cat}</option>`).join("")}
           </select>
         </div>
         <div class="field">
@@ -583,13 +859,23 @@ function renderRelatorios({ ano, filtroFaculdadeId } = {}){
   box.querySelector("#btnGerarRel").addEventListener("click", () => {
     const periodo = box.querySelector("#relPeriodo").value;
     const estado = box.querySelector("#relEstado").value;
+    const categoria = box.querySelector("#relCategoria").value;
     const anoRel = Number(box.querySelector("#relAno").value || ano);
+    const faculdadeRel = modoDireccao ? box.querySelector("#relFaculdade").value : filtroFaculdadeId;
 
-    let acts = DB.listActividades({ ano: anoRel, faculdadeId: filtroFaculdadeId });
+    let acts = DB.listActividades({ ano: anoRel, faculdadeId: faculdadeRel !== "TODAS" ? faculdadeRel : undefined });
     if (periodo !== "ANUAL") acts = acts.filter(a => a.periodo === periodo);
     if (estado !== "TODOS") acts = acts.filter(a => a.estadoExecucao === estado);
+    if (categoria !== "TODAS") acts = acts.filter(a => a.categoria === categoria);
 
-    const html = buildRelatorioHTML({ ano: anoRel, periodo, filtroFaculdadeId, acts, estado });
+    const html = buildRelatorioHTML({
+      ano: anoRel,
+      periodo,
+      filtroFaculdadeId: faculdadeRel !== "TODAS" ? faculdadeRel : null,
+      acts,
+      estado,
+      categoria
+    });
     downloadHTML(`relatorio_${anoRel}_${periodo}.html`, html);
     toast("Relatório gerado (ficheiro HTML descarregado).");
   });
@@ -597,11 +883,12 @@ function renderRelatorios({ ano, filtroFaculdadeId } = {}){
   return box;
 }
 
-function buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts, estado }){
+function buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts, estado, categoria }){
   const tituloInst = "Universidade — Direcção Científica";
   const tituloRel = `Relatório ${periodo === "ANUAL" ? "Anual" : "Periódico"} de Actividades Científicas`;
   const subt = filtroFaculdadeId ? `Faculdade: ${faculdadeNome(filtroFaculdadeId)}` : "Consolidação institucional (todas as faculdades)";
   const subtEstado = estado && estado !== "TODOS" ? `Estado: ${estadoLabel(estado)}` : "Estado: Todos";
+  const subtCategoria = categoria && categoria !== "TODAS" ? `Categoria: ${categoria}` : "Categoria: Todas";
   const k = calcKPIs(acts);
   const totalParaExec = k.planificadas + k.executadas + k.naoExecutadas;
   const percentExecucao = totalParaExec ? ((k.executadas / totalParaExec) * 100).toFixed(1) : "0.0";
@@ -644,6 +931,7 @@ function buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts, estado }){
   <div class="h1">${tituloRel} — ${ano}</div>
   <div class="h2">${subt}</div>
   <div class="h2">${subtEstado}</div>
+  <div class="h2">${subtCategoria}</div>
   <div class="meta">Gerado automaticamente pelo SIGAC (protótipo) — ${new Date().toLocaleString("pt-PT")}</div>
 
   <div class="kpis">

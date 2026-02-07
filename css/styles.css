@@ -290,6 +290,16 @@ select.input option{
 @media (max-width: 980px){
   .kpis{ grid-template-columns: repeat(2, 1fr); }
 }
+.kpis--monitoria{
+  grid-template-columns: repeat(5, 1fr);
+}
+.kpis--five{
+  grid-template-columns: repeat(5, 1fr);
+}
+@media (max-width: 980px){
+  .kpis--monitoria{ grid-template-columns: repeat(2, 1fr); }
+  .kpis--five{ grid-template-columns: repeat(2, 1fr); }
+}
 
 .kpi{
   border: 1px solid rgba(15,23,42,.10);
@@ -341,7 +351,7 @@ select.input option{
 }
 
 /* =========================================================
-   Badges (validação) — mais “clean”
+   Badges (estado de execução) — mais “clean”
    ========================================================= */
 .badge{
   display:inline-flex;
@@ -403,3 +413,41 @@ select.input option{
 a{ color: var(--primary2); font-weight: 800; text-decoration: none; }
 a:hover{ text-decoration: underline; }
 textarea.input{ resize: vertical; }
+
+/* =========================================================
+   Monitoria institucional (Direcção Científica)
+   ========================================================= */
+.monitoria{
+  border: 1px solid rgba(37,99,235,.14);
+  border-radius: var(--radius);
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(37,99,235,.08), rgba(255,255,255,.92));
+  margin-bottom: 16px;
+}
+.monitoria__header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom: 12px;
+}
+.monitoria__title{
+  font-weight: 900;
+  letter-spacing: -.2px;
+}
+.monitoria__subtitle{
+  color: var(--ink2);
+  font-size: .92rem;
+  margin-top: 4px;
+}
+.monitoria__year{ min-width: 160px; }
+
+.section{
+  margin-top: 16px;
+}
+.section__title{
+  font-weight: 900;
+  margin-bottom: 10px;
+}
