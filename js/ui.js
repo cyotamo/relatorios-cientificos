@@ -13,19 +13,21 @@ function fmtDate(iso){
   return d.toLocaleDateString("pt-PT");
 }
 
-function badgeEstadoValidacao(estado){
+function badgeEstadoExecucao(estado){
   const e = (estado || "").toLowerCase();
-  if (e === "validada") return `<span class="badge badge--good">✔ Validada</span>`;
-  if (e === "rejeitada") return `<span class="badge badge--bad">✖ Rejeitada</span>`;
-  return `<span class="badge badge--warn">⏳ Pendente</span>`;
+  if (e === "executada") return `<span class="badge badge--good">✔ Executada</span>`;
+  if (e === "cancelada") return `<span class="badge badge--bad">✖ Cancelada</span>`;
+  if (e === "naoexecutada") return `<span class="badge badge--warn">⚠ Não executada</span>`;
+  return `<span class="badge badge--info">📌 Planificada</span>`;
 }
 
 function calcKPIs(actividades){
   const total = actividades.length;
-  const pend = actividades.filter(a => (a.validacao?.estado || "Pendente") === "Pendente").length;
-  const val = actividades.filter(a => a.validacao?.estado === "Validada").length;
-  const rej = actividades.filter(a => a.validacao?.estado === "Rejeitada").length;
-  return { total, pend, val, rej };
+  const planificadas = actividades.filter(a => a.estadoExecucao === "Planificada").length;
+  const executadas = actividades.filter(a => a.estadoExecucao === "Executada").length;
+  const canceladas = actividades.filter(a => a.estadoExecucao === "Cancelada").length;
+  const naoExecutadas = actividades.filter(a => a.estadoExecucao === "NaoExecutada").length;
+  return { total, planificadas, executadas, canceladas, naoExecutadas };
 }
 
 function groupByFaculdade(actividades){

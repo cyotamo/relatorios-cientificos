@@ -211,6 +211,9 @@ select.input option{
 .btn--good{
   border-color: rgba(22,163,74,.25);
 }
+.btn--warn{
+  border-color: rgba(202,138,4,.35);
+}
 
 /* =========================================================
    Divisores / textos auxiliares
@@ -355,6 +358,7 @@ select.input option{
 .badge--good{ border-color: rgba(22,163,74,.28); background: rgba(22,163,74,.10); }
 .badge--warn{ border-color: rgba(202,138,4,.28); background: rgba(202,138,4,.10); }
 .badge--bad { border-color: rgba(220,38,38,.28); background: rgba(220,38,38,.10); }
+.badge--info{ border-color: rgba(37,99,235,.28); background: rgba(37,99,235,.10); }
 
 /* =========================================================
    Empty state

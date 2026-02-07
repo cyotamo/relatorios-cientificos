@@ -41,11 +41,11 @@ function defaultDB(){
       periodo: "T1",
       dataInicio: "2026-02-01",
       dataFim: "2026-03-30",
+      dataExecucao: "",
       evidencias: ["https://exemplo.edu/publicacao/123"],
-      estado: "Submetida",
+      estadoExecucao: "Planificada",
       criadoEm: nowISO(),
-      actualizadoEm: nowISO(),
-      validacao: { estado: "Pendente", comentario: "" }
+      actualizadoEm: nowISO()
     },
     {
       id: uuid(),
@@ -57,11 +57,11 @@ function defaultDB(){
       periodo: "T2",
       dataInicio: "2026-05-10",
       dataFim: "2026-05-12",
+      dataExecucao: "",
       evidencias: ["https://exemplo.edu/eventos/jsp-2026"],
-      estado: "Em execução",
+      estadoExecucao: "Planificada",
       criadoEm: nowISO(),
-      actualizadoEm: nowISO(),
-      validacao: { estado: "Pendente", comentario: "" }
+      actualizadoEm: nowISO()
     }
   ];
 
@@ -124,25 +124,42 @@ const DB = {
       periodo: payload.periodo,
       dataInicio: payload.dataInicio || "",
       dataFim: payload.dataFim || "",
+      dataExecucao: payload.dataExecucao || "",
       evidencias: (payload.evidencias || []).filter(Boolean),
-      estado: payload.estado || "Submetida",
+      estadoExecucao: payload.estadoExecucao || "Planificada",
       criadoEm: nowISO(),
-      actualizadoEm: nowISO(),
-      validacao: { estado: "Pendente", comentario: "" }
+      actualizadoEm: nowISO()
     };
     db.actividades.unshift(actividade);
     saveDB(db);
     return actividade;
   },
 
-  updateValidacao({ id, estado, comentario }){
+  updateEstadoExecucao({ id, estadoExecucao }){
     const db = loadDB();
     const idx = db.actividades.findIndex(a => a.id === id);
     if (idx < 0) throw new Error("Actividade não encontrada.");
-    db.actividades[idx].validacao = {
-      estado,
-      comentario: comentario || ""
-    };
+    db.actividades[idx].estadoExecucao = estadoExecucao;
+    db.actividades[idx].actualizadoEm = nowISO();
+    saveDB(db);
+    return db.actividades[idx];
+  },
+
+  updateDataExecucao({ id, dataExecucao }){
+    const db = loadDB();
+    const idx = db.actividades.findIndex(a => a.id === id);
+    if (idx < 0) throw new Error("Actividade não encontrada.");
+    db.actividades[idx].dataExecucao = dataExecucao || "";
+    db.actividades[idx].actualizadoEm = nowISO();
+    saveDB(db);
+    return db.actividades[idx];
+  },
+
+  setEvidencias({ id, evidencias }){
+    const db = loadDB();
+    const idx = db.actividades.findIndex(a => a.id === id);
+    if (idx < 0) throw new Error("Actividade não encontrada.");
+    db.actividades[idx].evidencias = (evidencias || []).filter(Boolean);
     db.actividades[idx].actualizadoEm = nowISO();
     saveDB(db);
     return db.actividades[idx];
