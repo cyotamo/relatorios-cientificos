@@ -17,8 +17,8 @@
   --stroke: rgba(15,23,42,.10);
 
   /* Acentos */
-  --primary: #2563eb;
-  --primary2:#1d4ed8;
+  --primary: #1e6fff;
+  --primary2:#1e56d9;
   --good: #16a34a;
   --warn: #ca8a04;
   --bad:  #dc2626;
@@ -42,7 +42,7 @@ body{
 
   /* Fundo elegante (bem “institucional”) */
   background:
-    radial-gradient(1100px 500px at 10% 0%, rgba(37,99,235,.14), transparent 55%),
+    radial-gradient(1100px 500px at 10% 0%, rgba(30,111,255,.18), transparent 55%),
     radial-gradient(1000px 520px at 92% 12%, rgba(22,163,74,.10), transparent 58%),
     radial-gradient(900px 520px at 60% 95%, rgba(202,138,4,.08), transparent 60%),
     linear-gradient(180deg, var(--bg1), var(--bg0));
@@ -123,7 +123,7 @@ body{
   padding: 18px 18px 12px;
   border-bottom: 1px solid rgba(15,23,42,.08);
   background:
-    linear-gradient(180deg, rgba(37,99,235,.06), rgba(255,255,255,.0));
+    linear-gradient(180deg, rgba(30,111,255,.10), rgba(255,255,255,.0));
 }
 .card__title{
   margin:0;
@@ -270,8 +270,8 @@ select.input option{
   background: rgba(255,255,255,.92);
 }
 .tab--active{
-  background: linear-gradient(145deg, rgba(37,99,235,.14), rgba(255,255,255,.95));
-  border-color: rgba(37,99,235,.30);
+  background: linear-gradient(145deg, rgba(30,111,255,.20), rgba(255,255,255,.95));
+  border-color: rgba(30,111,255,.40);
   color: rgba(15,23,42,.92);
 }
 
