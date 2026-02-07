@@ -2,7 +2,7 @@
 
 const state = {
   sessao: null, // { perfil, ano, faculdadeId? }
-  tab: "DASHBOARD" // DASHBOARD | ACTIVIDADES | RELATORIOS
+  tab: "PLANIFICACAO" // PLANIFICACAO | PLANIFICADAS | EXECUTADAS | CANCELADAS | NAO_EXECUTADAS | RELATORIO
 };
 
 const $ = (id) => document.getElementById(id);
@@ -48,17 +48,24 @@ function onEntrar(){
     const faculdadeId = $("faculdade").value;
     state.sessao = { perfil, ano, faculdadeId };
     $("statusSessao").textContent = `Sessão: Faculdade (${faculdadeNome(faculdadeId)}) — ${ano}`;
-  } else {
-    state.sessao = { perfil, ano };
-    $("statusSessao").textContent = `Sessão: Direcção Científica — ${ano}`;
   }
 
-  state.tab = "DASHBOARD";
+  state.tab = "PLANIFICACAO";
   render();
 }
 
 function faculdadeNome(id){
   return DB.listFaculdades().find(f => f.id === id)?.nome || id;
+}
+
+function estadoLabel(estado){
+  switch (estado){
+    case "Planificada": return "Planificada";
+    case "Executada": return "Executada";
+    case "Cancelada": return "Cancelada";
+    case "NaoExecutada": return "Não executada";
+    default: return "Planificada";
+  }
 }
 
 function toast(msg){
@@ -96,9 +103,12 @@ function render(){
 
   const tabs = el(`
     <div class="tabs">
-      <div class="tab ${state.tab==="DASHBOARD"?"tab--active":""}" data-tab="DASHBOARD">Visão Geral</div>
-      <div class="tab ${state.tab==="ACTIVIDADES"?"tab--active":""}" data-tab="ACTIVIDADES">Actividades</div>
-      <div class="tab ${state.tab==="RELATORIOS"?"tab--active":""}" data-tab="RELATORIOS">Relatórios</div>
+      <div class="tab ${state.tab==="PLANIFICACAO"?"tab--active":""}" data-tab="PLANIFICACAO">Planificação</div>
+      <div class="tab ${state.tab==="PLANIFICADAS"?"tab--active":""}" data-tab="PLANIFICADAS">Planificadas</div>
+      <div class="tab ${state.tab==="EXECUTADAS"?"tab--active":""}" data-tab="EXECUTADAS">Executadas</div>
+      <div class="tab ${state.tab==="CANCELADAS"?"tab--active":""}" data-tab="CANCELADAS">Canceladas</div>
+      <div class="tab ${state.tab==="NAO_EXECUTADAS"?"tab--active":""}" data-tab="NAO_EXECUTADAS">Não executadas</div>
+      <div class="tab ${state.tab==="RELATORIO"?"tab--active":""}" data-tab="RELATORIO">Relatório</div>
     </div>
   `);
   tabs.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
@@ -107,12 +117,38 @@ function render(){
   }));
   root.appendChild(tabs);
 
-  if (state.sessao.perfil === "FACULDADE"){
-    setHeader("Módulo da Faculdade", "Registo e submissão de actividades anuais com evidências.");
-    renderFaculdade(root);
-  } else {
-    setHeader("Direcção Científica", "Monitoria, validação e consolidação de relatórios institucionais.");
-    renderDireccao(root);
+  setHeader(tabTitle(state.tab), tabSubtitle(state.tab));
+  renderFaculdade(root);
+}
+
+function tabTitle(tab){
+  switch (tab){
+    case "PLANIFICACAO": return "Planificação";
+    case "PLANIFICADAS": return "Planificadas";
+    case "EXECUTADAS": return "Executadas";
+    case "CANCELADAS": return "Canceladas";
+    case "NAO_EXECUTADAS": return "Não executadas";
+    case "RELATORIO": return "Relatório";
+    default: return "Planificação";
+  }
+}
+
+function tabSubtitle(tab){
+  switch (tab){
+    case "PLANIFICACAO":
+      return "Registo de actividades anuais e calendarização.";
+    case "PLANIFICADAS":
+      return "Gestão do plano: definir data de execução, cancelar ou reprogramar.";
+    case "EXECUTADAS":
+      return "Registo de evidências e histórico de execução.";
+    case "RELATORIO":
+      return "Relatórios periódicos e anual por estado e por categoria.";
+    case "CANCELADAS":
+      return "Histórico de actividades canceladas e opção de reabrir.";
+    case "NAO_EXECUTADAS":
+      return "Actividades não realizadas e opção de replanificar.";
+    default:
+      return "Registo de actividades anuais e calendarização.";
   }
 }
 
@@ -124,103 +160,44 @@ function renderFaculdade(root){
   root.appendChild(el(`
     <div class="kpis">
       <div class="kpi"><div class="kpi__label">Total</div><div class="kpi__value">${k.total}</div></div>
-      <div class="kpi"><div class="kpi__label">Pendentes</div><div class="kpi__value">${k.pend}</div></div>
-      <div class="kpi"><div class="kpi__label">Validadas</div><div class="kpi__value">${k.val}</div></div>
-      <div class="kpi"><div class="kpi__label">Rejeitadas</div><div class="kpi__value">${k.rej}</div></div>
+      <div class="kpi"><div class="kpi__label">Planificadas</div><div class="kpi__value">${k.planificadas}</div></div>
+      <div class="kpi"><div class="kpi__label">Executadas</div><div class="kpi__value">${k.executadas}</div></div>
+      <div class="kpi"><div class="kpi__label">Não executadas</div><div class="kpi__value">${k.naoExecutadas}</div></div>
     </div>
   `));
-
-  if (state.tab === "DASHBOARD"){
-    root.appendChild(el(`
-      <div class="callout">
-        <div class="callout__title">Como a faculdade usa o sistema</div>
-        <div class="callout__text">
-          Ao longo do ano, a faculdade regista actividades (pesquisa, extensão, eventos, publicações, pós-graduação, etc.),
-          anexa evidências (links/Drive), e submete para validação. No fim, o relatório anual é gerado automaticamente.
-        </div>
-      </div>
-    `));
-  }
-
-  if (state.tab === "ACTIVIDADES"){
-    root.appendChild(renderFormNovaActividade({ ano, faculdadeId }));
-    root.appendChild(renderTabelaActividades(actividades, { modo: "FACULDADE" }));
-  }
-
-  if (state.tab === "RELATORIOS"){
-    root.appendChild(renderRelatorios({ ano, filtroFaculdadeId: faculdadeId }));
-  }
-}
-
-function renderDireccao(root){
-  const { ano } = state.sessao;
-  const actividades = DB.listActividades({ ano });
-  const k = calcKPIs(actividades);
 
   root.appendChild(el(`
-    <div class="kpis">
-      <div class="kpi"><div class="kpi__label">Total (todas as faculdades)</div><div class="kpi__value">${k.total}</div></div>
-      <div class="kpi"><div class="kpi__label">Pendentes</div><div class="kpi__value">${k.pend}</div></div>
-      <div class="kpi"><div class="kpi__label">Validadas</div><div class="kpi__value">${k.val}</div></div>
-      <div class="kpi"><div class="kpi__label">Rejeitadas</div><div class="kpi__value">${k.rej}</div></div>
+    <div class="row" style="margin-top:-4px;">
+      <span class="badge badge--bad">Canceladas: ${k.canceladas}</span>
     </div>
   `));
 
-  if (state.tab === "DASHBOARD"){
-    const byF = groupByFaculdade(actividades);
-    const facs = DB.listFaculdades();
-
-    const rows = facs.map(f => {
-      const list = byF.get(f.id) || [];
-      const kk = calcKPIs(list);
-      return `
-        <tr>
-          <td><b>${f.nome}</b></td>
-          <td>${kk.total}</td>
-          <td>${kk.pend}</td>
-          <td>${kk.val}</td>
-          <td>${kk.rej}</td>
-        </tr>
-      `;
-    }).join("");
-
-    root.appendChild(el(`
-      <div class="callout" style="margin-bottom:12px;">
-        <div class="callout__title">Monitoria institucional</div>
-        <div class="callout__text">
-          Aqui a Direcção Científica acompanha o estado das submissões por faculdade, identifica atrasos e valida conteúdos.
-        </div>
-      </div>
-
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Faculdade</th>
-            <th>Total</th>
-            <th>Pendentes</th>
-            <th>Validadas</th>
-            <th>Rejeitadas</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `));
+  if (state.tab === "PLANIFICACAO"){
+    root.appendChild(renderFormNovaActividade({ ano, faculdadeId }));
   }
 
-  if (state.tab === "ACTIVIDADES"){
-    root.appendChild(el(`
-      <div class="callout" style="margin-bottom:12px;">
-        <div class="callout__title">Validação</div>
-        <div class="callout__text">
-          Para cada actividade, a Direcção Científica pode <b>validar</b> ou <b>rejeitar</b>, registando observações.
-        </div>
-      </div>
-    `));
-    root.appendChild(renderTabelaActividades(actividades, { modo: "DIRECCAO" }));
+  if (state.tab === "PLANIFICADAS"){
+    const list = actividades.filter(a => a.estadoExecucao === "Planificada");
+    root.appendChild(renderTabelaPlanificadas(list));
   }
 
-  if (state.tab === "RELATORIOS"){
-    root.appendChild(renderRelatorios({ ano }));
+  if (state.tab === "EXECUTADAS"){
+    const list = actividades.filter(a => a.estadoExecucao === "Executada");
+    root.appendChild(renderTabelaExecutadas(list));
+  }
+
+  if (state.tab === "CANCELADAS"){
+    const list = actividades.filter(a => a.estadoExecucao === "Cancelada");
+    root.appendChild(renderTabelaCanceladas(list));
+  }
+
+  if (state.tab === "NAO_EXECUTADAS"){
+    const list = actividades.filter(a => a.estadoExecucao === "NaoExecutada");
+    root.appendChild(renderTabelaNaoExecutadas(list));
+  }
+
+  if (state.tab === "RELATORIO"){
+    root.appendChild(renderRelatorios({ ano, filtroFaculdadeId: faculdadeId }));
   }
 }
 
@@ -229,7 +206,7 @@ function renderFormNovaActividade({ ano, faculdadeId }){
     <div class="callout" style="margin-bottom:12px;">
       <div class="callout__title">Nova actividade</div>
       <div class="callout__text">
-        Registe actividades ao longo do ano. Inclua evidências (links) para facilitar a validação e auditoria.
+        Registe actividades ao longo do ano. Inclua evidências (links) para consolidar a memória institucional.
       </div>
 
       <div style="margin-top:12px;" class="grid">
@@ -288,7 +265,7 @@ function renderFormNovaActividade({ ano, faculdadeId }){
         <div class="row">
           <button class="btn btn--primary" id="btnCriar">Guardar actividade</button>
           <button class="btn btn--danger" id="btnLimpar">Limpar</button>
-          <span class="hint">A actividade entra como <b>Pendente</b> para validação.</span>
+          <span class="hint">A actividade entra como <b>Planificada</b>.</span>
         </div>
       </div>
     </div>
@@ -318,10 +295,11 @@ function renderFormNovaActividade({ ano, faculdadeId }){
       dataInicio: di,
       dataFim: df,
       evidencias: ev,
-      estado: "Submetida"
+      estadoExecucao: "Planificada",
+      dataExecucao: ""
     });
 
-    toast("Actividade guardada e submetida para validação.");
+    toast("Actividade guardada como planificada.");
     render();
   });
 
@@ -336,45 +314,28 @@ function renderFormNovaActividade({ ano, faculdadeId }){
   return wrap;
 }
 
-function renderTabelaActividades(actividades, { modo }){
+function renderTabelaPlanificadas(actividades){
   if (!actividades.length){
-    return el(`
-      <div class="empty">
-        <div class="empty__icon">🗂️</div>
-        <div class="empty__title">Sem registos</div>
-        <div class="empty__text">Ainda não existem actividades registadas para os critérios seleccionados.</div>
-      </div>
-    `);
+    return renderEmpty();
   }
 
   const rows = actividades.map(a => `
     <tr>
       <td>
         <b>${a.titulo}</b><br/>
-        <span class="muted">${a.categoria} • ${a.periodo} • ${faculdadeNome(a.faculdadeId)}</span><br/>
+        <span class="muted">${a.categoria} • ${a.periodo}</span><br/>
         <span class="muted">Início: ${fmtDate(a.dataInicio)} • Fim: ${fmtDate(a.dataFim)}</span>
       </td>
-      <td>${badgeEstadoValidacao(a.validacao?.estado)}</td>
       <td>
-        <div class="muted">${(a.descricao || "—").slice(0, 180)}${(a.descricao||"").length>180?"…":""}</div>
-        ${a.evidencias?.length ? `<div style="margin-top:8px;">${a.evidencias.map((u,i)=>`<div><a href="${u}" target="_blank" rel="noopener">Evidência ${i+1}</a></div>`).join("")}</div>` : `<div class="muted" style="margin-top:6px;">Sem evidências</div>`}
+        <input class="input" type="date" value="${a.dataExecucao || ""}" data-role="dataExecucao" data-id="${a.id}" />
       </td>
+      <td>${badgeEstadoExecucao(a.estadoExecucao)}</td>
       <td style="white-space:nowrap;">
-        ${modo === "DIRECCAO" ? `
-          <button class="btn btn--good" data-act="validar" data-id="${a.id}">Validar</button>
-          <button class="btn btn--danger" data-act="rejeitar" data-id="${a.id}" style="margin-left:6px;">Rejeitar</button>
-        ` : `
-          <button class="btn btn--danger" data-act="apagar" data-id="${a.id}">Apagar</button>
-        `}
+        <button class="btn btn--good" data-act="executada" data-id="${a.id}">Executada</button>
+        <button class="btn btn--warn" data-act="naoExecutada" data-id="${a.id}" style="margin-left:6px;">Não executada</button>
+        <button class="btn btn--danger" data-act="cancelada" data-id="${a.id}" style="margin-left:6px;">Cancelar</button>
       </td>
     </tr>
-    ${a.validacao?.comentario ? `
-      <tr>
-        <td colspan="4" style="background: rgba(0,0,0,.10);">
-          <span class="muted"><b>Observação:</b> ${a.validacao.comentario}</span>
-        </td>
-      </tr>
-    ` : ``}
   `).join("");
 
   const table = el(`
@@ -382,8 +343,74 @@ function renderTabelaActividades(actividades, { modo }){
       <thead>
         <tr>
           <th>Actividade</th>
-          <th>Validação</th>
-          <th>Descrição & evidências</th>
+          <th>Data de execução</th>
+          <th>Estado</th>
+          <th>Acções</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `);
+
+  table.querySelectorAll("input[data-role='dataExecucao']").forEach(input => {
+    input.addEventListener("change", () => {
+      DB.updateDataExecucao({ id: input.dataset.id, dataExecucao: input.value });
+      toast("Data de execução actualizada.");
+    });
+  });
+
+  table.querySelectorAll("button[data-act]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const act = btn.dataset.act;
+      if (act === "executada"){
+        DB.updateEstadoExecucao({ id, estadoExecucao: "Executada" });
+        toast("Actividade marcada como executada.");
+      }
+      if (act === "naoExecutada"){
+        DB.updateEstadoExecucao({ id, estadoExecucao: "NaoExecutada" });
+        toast("Actividade marcada como não executada.");
+      }
+      if (act === "cancelada"){
+        DB.updateEstadoExecucao({ id, estadoExecucao: "Cancelada" });
+        toast("Actividade cancelada.");
+      }
+      render();
+    });
+  });
+
+  return table;
+}
+
+function renderTabelaExecutadas(actividades){
+  if (!actividades.length){
+    return renderEmpty();
+  }
+
+  const rows = actividades.map(a => `
+    <tr>
+      <td>
+        <b>${a.titulo}</b><br/>
+        <span class="muted">${a.categoria} • ${a.periodo}</span>
+      </td>
+      <td>${fmtDate(a.dataExecucao)}</td>
+      <td>
+        <textarea class="input" rows="2" data-role="evidencias" data-id="${a.id}">${(a.evidencias || []).join("\n")}</textarea>
+      </td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn--primary" data-act="guardarEvidencias" data-id="${a.id}">Guardar evidências</button>
+        <button class="btn btn--ghost" data-act="replanificar" data-id="${a.id}" style="margin-left:6px;">Reverter</button>
+      </td>
+    </tr>
+  `).join("");
+
+  const table = el(`
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Actividade</th>
+          <th>Data de execução</th>
+          <th>Evidências</th>
           <th>Acções</th>
         </tr>
       </thead>
@@ -393,21 +420,19 @@ function renderTabelaActividades(actividades, { modo }){
 
   table.querySelectorAll("button[data-act]").forEach(btn => {
     btn.addEventListener("click", () => {
-      const act = btn.dataset.act;
       const id = btn.dataset.id;
+      const act = btn.dataset.act;
 
-      if (act === "apagar"){
-        DB.deleteActividade(id);
-        toast("Registo removido.");
-        render();
-        return;
+      if (act === "guardarEvidencias"){
+        const textarea = table.querySelector(`textarea[data-role='evidencias'][data-id='${id}']`);
+        const evidencias = textarea.value.split("\n").map(x => x.trim()).filter(Boolean);
+        DB.setEvidencias({ id, evidencias });
+        toast("Evidências actualizadas.");
       }
 
-      if (act === "validar" || act === "rejeitar"){
-        const comentario = prompt("Comentário (opcional) para registo/auditoria:", "");
-        const estado = (act === "validar") ? "Validada" : "Rejeitada";
-        DB.updateValidacao({ id, estado, comentario: comentario || "" });
-        toast(`Actividade ${estado.toLowerCase()}.`);
+      if (act === "replanificar"){
+        DB.updateEstadoExecucao({ id, estadoExecucao: "Planificada" });
+        toast("Actividade replanificada.");
         render();
       }
     });
@@ -416,15 +441,117 @@ function renderTabelaActividades(actividades, { modo }){
   return table;
 }
 
+function renderTabelaCanceladas(actividades){
+  if (!actividades.length){
+    return renderEmpty();
+  }
+
+  const rows = actividades.map(a => `
+    <tr>
+      <td>
+        <b>${a.titulo}</b><br/>
+        <span class="muted">${a.categoria} • ${a.periodo}</span>
+      </td>
+      <td>${fmtDate(a.dataExecucao)}</td>
+      <td>${badgeEstadoExecucao(a.estadoExecucao)}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn--ghost" data-act="reabrir" data-id="${a.id}">Reabrir</button>
+      </td>
+    </tr>
+  `).join("");
+
+  const table = el(`
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Actividade</th>
+          <th>Data de execução</th>
+          <th>Estado</th>
+          <th>Acções</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `);
+
+  table.querySelectorAll("button[data-act='reabrir']").forEach(btn => {
+    btn.addEventListener("click", () => {
+      DB.updateEstadoExecucao({ id: btn.dataset.id, estadoExecucao: "Planificada" });
+      toast("Actividade reaberta para planificação.");
+      render();
+    });
+  });
+
+  return table;
+}
+
+function renderTabelaNaoExecutadas(actividades){
+  if (!actividades.length){
+    return renderEmpty();
+  }
+
+  const rows = actividades.map(a => `
+    <tr>
+      <td>
+        <b>${a.titulo}</b><br/>
+        <span class="muted">${a.categoria} • ${a.periodo}</span>
+      </td>
+      <td>${fmtDate(a.dataExecucao)}</td>
+      <td>${badgeEstadoExecucao(a.estadoExecucao)}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn--ghost" data-act="replanificar" data-id="${a.id}">Replanificar</button>
+      </td>
+    </tr>
+  `).join("");
+
+  const table = el(`
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Actividade</th>
+          <th>Data de execução</th>
+          <th>Estado</th>
+          <th>Acções</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `);
+
+  table.querySelectorAll("button[data-act='replanificar']").forEach(btn => {
+    btn.addEventListener("click", () => {
+      DB.updateEstadoExecucao({ id: btn.dataset.id, estadoExecucao: "Planificada" });
+      toast("Actividade replanificada.");
+      render();
+    });
+  });
+
+  return table;
+}
+
+function renderEmpty(){
+  return el(`
+    <div class="empty">
+      <div class="empty__icon">🗂️</div>
+      <div class="empty__title">Sem registos</div>
+      <div class="empty__text">Ainda não existem actividades registadas para os critérios seleccionados.</div>
+    </div>
+  `);
+}
+
 function renderRelatorios({ ano, filtroFaculdadeId } = {}){
   const box = el(`
     <div class="callout" style="margin-bottom:12px;">
       <div class="callout__title">Relatórios</div>
       <div class="callout__text">
-        Gere relatórios por período (T1–T4) e anual. No sistema real, isto alimentaria PDFs oficiais e dashboards.
+        Gere relatórios por período (T1–T4) e anual, com recorte por estado de execução.
       </div>
 
-      <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top:12px;">
+      <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap:12px; margin-top:12px;">
+        <div class="field">
+          <label class="label">Ano</label>
+          <input class="input" id="relAno" type="number" min="2000" max="2100" value="${ano}" />
+        </div>
         <div class="field">
           <label class="label">Período</label>
           <select class="input" id="relPeriodo">
@@ -436,12 +563,13 @@ function renderRelatorios({ ano, filtroFaculdadeId } = {}){
           </select>
         </div>
         <div class="field">
-          <label class="label">Filtro de validação</label>
-          <select class="input" id="relVal">
+          <label class="label">Estado</label>
+          <select class="input" id="relEstado">
             <option value="TODOS" selected>Todos</option>
-            <option value="Pendente">Pendentes</option>
-            <option value="Validada">Validadas</option>
-            <option value="Rejeitada">Rejeitadas</option>
+            <option value="Planificada">Planificadas</option>
+            <option value="Executada">Executadas</option>
+            <option value="Cancelada">Canceladas</option>
+            <option value="NaoExecutada">Não executadas</option>
           </select>
         </div>
         <div class="field">
@@ -454,32 +582,37 @@ function renderRelatorios({ ano, filtroFaculdadeId } = {}){
 
   box.querySelector("#btnGerarRel").addEventListener("click", () => {
     const periodo = box.querySelector("#relPeriodo").value;
-    const val = box.querySelector("#relVal").value;
+    const estado = box.querySelector("#relEstado").value;
+    const anoRel = Number(box.querySelector("#relAno").value || ano);
 
-    let acts = DB.listActividades({ ano, faculdadeId: filtroFaculdadeId });
+    let acts = DB.listActividades({ ano: anoRel, faculdadeId: filtroFaculdadeId });
     if (periodo !== "ANUAL") acts = acts.filter(a => a.periodo === periodo);
-    if (val !== "TODOS") acts = acts.filter(a => (a.validacao?.estado || "Pendente") === val);
+    if (estado !== "TODOS") acts = acts.filter(a => a.estadoExecucao === estado);
 
-    const html = buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts });
-    downloadHTML(`relatorio_${ano}_${periodo}.html`, html);
+    const html = buildRelatorioHTML({ ano: anoRel, periodo, filtroFaculdadeId, acts, estado });
+    downloadHTML(`relatorio_${anoRel}_${periodo}.html`, html);
     toast("Relatório gerado (ficheiro HTML descarregado).");
   });
 
   return box;
 }
 
-function buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts }){
+function buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts, estado }){
   const tituloInst = "Universidade — Direcção Científica";
   const tituloRel = `Relatório ${periodo === "ANUAL" ? "Anual" : "Periódico"} de Actividades Científicas`;
   const subt = filtroFaculdadeId ? `Faculdade: ${faculdadeNome(filtroFaculdadeId)}` : "Consolidação institucional (todas as faculdades)";
+  const subtEstado = estado && estado !== "TODOS" ? `Estado: ${estadoLabel(estado)}` : "Estado: Todos";
   const k = calcKPIs(acts);
+  const totalParaExec = k.planificadas + k.executadas + k.naoExecutadas;
+  const percentExecucao = totalParaExec ? ((k.executadas / totalParaExec) * 100).toFixed(1) : "0.0";
 
   const rows = acts.map(a => `
     <tr>
       <td><b>${a.titulo}</b><br/><span style="color:#555">${a.categoria} • ${a.periodo} • ${faculdadeNome(a.faculdadeId)}</span></td>
       <td>${a.dataInicio || "—"}</td>
       <td>${a.dataFim || "—"}</td>
-      <td>${a.validacao?.estado || "Pendente"}</td>
+      <td>${a.dataExecucao || "—"}</td>
+      <td>${estadoLabel(a.estadoExecucao)}</td>
       <td>${(a.evidencias||[]).join("<br/>") || "—"}</td>
     </tr>
   `).join("");
@@ -510,14 +643,17 @@ function buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts }){
   <div class="h1">${tituloInst}</div>
   <div class="h1">${tituloRel} — ${ano}</div>
   <div class="h2">${subt}</div>
+  <div class="h2">${subtEstado}</div>
   <div class="meta">Gerado automaticamente pelo SIGAC (protótipo) — ${new Date().toLocaleString("pt-PT")}</div>
 
   <div class="kpis">
     <div class="kpi"><small>Total</small><b>${k.total}</b></div>
-    <div class="kpi"><small>Pendentes</small><b>${k.pend}</b></div>
-    <div class="kpi"><small>Validadas</small><b>${k.val}</b></div>
-    <div class="kpi"><small>Rejeitadas</small><b>${k.rej}</b></div>
+    <div class="kpi"><small>Planificadas</small><b>${k.planificadas}</b></div>
+    <div class="kpi"><small>Executadas</small><b>${k.executadas}</b></div>
+    <div class="kpi"><small>Não executadas</small><b>${k.naoExecutadas}</b></div>
+    <div class="kpi"><small>Canceladas</small><b>${k.canceladas}</b></div>
   </div>
+  <div class="meta"><b>Percentagem de execução:</b> ${percentExecucao}%</div>
 
   <table>
     <thead>
@@ -525,12 +661,13 @@ function buildRelatorioHTML({ ano, periodo, filtroFaculdadeId, acts }){
         <th>Actividade</th>
         <th>Início</th>
         <th>Fim</th>
-        <th>Validação</th>
+        <th>Execução</th>
+        <th>Estado</th>
         <th>Evidências</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || `<tr><td colspan="5">Sem registos para os critérios seleccionados.</td></tr>`}
+      ${rows || `<tr><td colspan="6">Sem registos para os critérios seleccionados.</td></tr>`}
     </tbody>
   </table>
 
