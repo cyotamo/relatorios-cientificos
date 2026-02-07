@@ -1,6 +1,6 @@
 :root{
   --bg: #111827;
-  --card: rgba(255,255,255,.09);
+  --card: rgba(255,255,255,.10);
   --stroke: rgba(255,255,255,.16);
   --text: rgba(255,255,255,.92);
   --muted: rgba(255,255,255,.75);
@@ -33,10 +33,16 @@ body{
 .container{ width:min(1150px, 92%); margin:0 auto; }
 
 .topbar{
-  position:sticky; top:0; z-index:10;
-  backdrop-filter: blur(10px);
-  background: rgba(11,18,32,.75);
-  border-bottom: 1px solid var(--stroke);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(12px);
+  background: linear-gradient(
+    180deg,
+    rgba(30,58,138,.65),
+    rgba(15,23,42,.65)
+  );
+  border-bottom: 1px solid rgba(255,255,255,.18);
 }
 .topbar__inner{
   display:flex; align-items:center; justify-content:space-between;
@@ -77,9 +83,13 @@ body{
 .card--full{ min-height: 560px; }
 
 .card__header{
-  padding: 18px 18px 10px;
-  border-bottom: 1px solid var(--stroke);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.18);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.14),
+    rgba(255,255,255,.05)
+  );
 }
 .card__title{ margin:0; font-size: 1.05rem; }
 .card__subtitle{ margin:6px 0 0; color: var(--muted); font-size: .92rem; }
